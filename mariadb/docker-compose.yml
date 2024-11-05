@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:10.5
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pratice_board
+      MYSQL_USER: user  # 일반 사용자 추가 (필요 시)
+      MYSQL_PASSWORD: userpassword  # 일반 사용자 비밀번호 (필요 시)
+    volumes:
+      - ./createDB.sql:/docker-entrypoint-initdb.d/createDB.sql
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  tomcat:
+    build:
+      context: /root/tomcat
+    ports:
+      - "8080:8080"  # 호스트의 8080 포트를 Tomcat의 8080 포트에 매핑
+    depends_on:
+      mariadb:
+        condition: service_healthy  # MariaDB가 건강할 때까지 대기
+    environment:
+      DATABASE_URL: jdbc:mariadb://mariadb:3306/pratice_board  # MariaDB의 연결 URL
+      DATABASE_USER: user  # MariaDB 일반 사용자
+      DATABASE_PASSWORD: userpassword  # MariaDB 일반 사용자 비밀번호
+
+volumes:
+  mariadb_data:
